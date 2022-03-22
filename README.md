@@ -13,6 +13,13 @@ source ./venv/bin/activate
 ```bat
 venv\Scripts\activate.bat
 ```
+
+## Instalar dependencias
+
+```sh
+pip install -r requirements.txt
+```
+
 ## Inicio del programa
 
 Para correr el programa:
