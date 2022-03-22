@@ -10,6 +10,8 @@ from sklearn.preprocessing import LabelEncoder
 
 from plot import plot_decision_regions
 
+np.set_printoptions(precision=10, suppress=True)
+
 def estandarizar(ex):
     return (ex - ex.mean() / ex.std())
 
@@ -38,9 +40,9 @@ c_espe_norm = t_espe_norm[t_espe_norm.index.isin(c_comp_norm.index)].copy()
 # Espectros incompletos normalizados
 i_esp_norm = normalizar(datos[datos['C/G'].isna()].iloc[:, 5:].copy())
 
-# plt.matshow(t_espe_norm)
-# plt.tight_layout()
-# plt.show()
+plt.matshow(t_espe_norm)
+# plt.ion()
+plt.show()
 
 # Solo las filas con datos completos (para entrenamiento)
 
@@ -52,10 +54,15 @@ imr = SimpleImputer(strategy='mean')
 # Entrenar con todas las composiciones
 imr.fit(t_comp.values)
 imputed_data = imr.transform(t_comp.values)
-# print(imputed_data)
+print(imputed_data)
 
 lr = LogisticRegression(C=100.0, random_state=1)
 # lr.fit(X, y)
 
 # plt.scatter(X, y)
 # plt.scatter()
+
+
+# t_comp[t_comp.iloc[:, 1] > t_comp.iloc[:, 2]]
+# t_comp[t_comp.iloc[:, 1] < t_comp.iloc[:, 2]]
+
