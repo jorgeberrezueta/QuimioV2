@@ -14,15 +14,17 @@ fig = plt.figure()
 
 ax = fig.add_subplot(111, projection='3d')
 
-colX = t_comp.iloc[:,1] # G/N
-colY = t_comp.iloc[:,2]  # P/G
-colZ = t_comp.iloc[:,0]  # C/G 
+colors = ["red", "blue", "green", "purple", "orange", "yellow"]
 
-for t in np.unique(completos.iloc[:,1].values):
+for c, t in zip(colors, np.unique(completos.iloc[:,1].values)):
     ax.scatter(
-        colX, # G/N
-        colY,  # P/G
-        colZ # C/G 
+        completos[completos["TYPE"] == t].iloc[:,2], # G/N
+        completos[completos["TYPE"] == t].iloc[:,3], # P/G
+        completos[completos["TYPE"] == t].iloc[:,4], # C/G
+        c=c,
+        edgecolors='black'
     )
+
+ax.legend(np.unique(completos.iloc[:,1].values))
 
 plt.show()

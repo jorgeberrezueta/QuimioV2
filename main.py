@@ -2,11 +2,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.impute import SimpleImputer 
-from sklearn.preprocessing import StandardScaler
-# from sklearn.decomposition import PCA
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LinearRegression
 
 from plot import plot_decision_regions
 
@@ -18,6 +14,9 @@ def estandarizar(ex):
 def normalizar(ex):
     return (ex - ex.min()) / (ex.max() - ex.min())
 
+#################
+### CARGAR DATOS
+#################
 
 datos = pd.read_csv('datos.csv')
 # aceites = pd.read_csv('aceites.csv', encoding="latin-1")
@@ -40,29 +39,66 @@ c_espe_norm = t_espe_norm[t_espe_norm.index.isin(c_comp_norm.index)].copy()
 # Espectros incompletos normalizados
 i_esp_norm = normalizar(datos[datos['C/G'].isna()].iloc[:, 5:].copy())
 
-plt.matshow(t_espe_norm)
-# plt.ion()
+#################################################
+# CREAR MODELO DE REGRESION, ENTRENAR Y PREDECIR
+#################################################
+
+# Espectros completos normalizados
+X = c_espe_norm.values
+# Composiciones completas normalizadas
+y = c_comp_norm
+
+lr = LinearRegression()
+
+# Entrenar unicamente utilizando los espectros normalizados (x) y composiciones normalizadas (y) completos
+lr.fit(X, y)
+
+# Obtener una estimacion utilizando todos los espectros normalizados
+estimaciones = pd.DataFrame(columns=["est_C/G", "est_G/N", "est_P/G"], data=lr.predict(t_espe_norm))
+estimaciones.insert(loc=0, column="WL", value=datos["WL"])
+estimaciones.to_csv('output/estimaciones.csv', index=False)
+
+#############################################
+### REEMPLAZAR VALORES EN LA MATRIZ ORIGINAL
+#############################################
+
+combinado = datos.copy()
+
+indices_vacios = combinado[combinado["C/G"].isna()].index
+
+combinado['STATE'] = 'original'
+combinado.loc[combinado["C/G"].isna(), 'STATE'] = 'estimacion'
+combinado.loc[combinado["C/G"].isna(), 'C/G'] = estimaciones.values[:, 0][indices_vacios]
+combinado.loc[combinado["G/N"].isna(), 'G/N'] = estimaciones.values[:, 1][indices_vacios]
+combinado.loc[combinado["P/G"].isna(), 'P/G'] = estimaciones.values[:, 2][indices_vacios]
+
+combinado = combinado[["WL", "STATE", "C/G", "G/N", "P/G"]]
+
+print(combinado)
+
+combinado.to_csv('output/combinado.csv', index=False)
+
+#############
+### GRAFICAR
+#############
+
+# Graficar X = G/N, Y = C/G, color = STATE
+
+plt.scatter(
+    combinado[combinado["STATE"] == 'original']['G/N'],
+    combinado[combinado["STATE"] == "original"]["P/G"],
+    c='blue',
+)
+plt.scatter(
+    combinado[combinado["STATE"] == 'estimacion']['G/N'],
+    combinado[combinado["STATE"] == "estimacion"]["P/G"],
+    c='red',
+)
+
+plt.xlabel('G/N')
+plt.ylabel('P/G')
+
 plt.show()
 
-# Solo las filas con datos completos (para entrenamiento)
-
-
-X = c_espe_norm.values
-y = c_comp_norm.values
-
-imr = SimpleImputer(strategy='mean')
-# Entrenar con todas las composiciones
-imr.fit(t_comp.values)
-imputed_data = imr.transform(t_comp.values)
-print(imputed_data)
-
-lr = LogisticRegression(C=100.0, random_state=1)
-# lr.fit(X, y)
-
-# plt.scatter(X, y)
-# plt.scatter()
-
-
-# t_comp[t_comp.iloc[:, 1] > t_comp.iloc[:, 2]]
-# t_comp[t_comp.iloc[:, 1] < t_comp.iloc[:, 2]]
-
+# plt.matshow(t_espe_norm)
+# plt.show()
