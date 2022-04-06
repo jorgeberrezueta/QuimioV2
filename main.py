@@ -71,7 +71,7 @@ class WrapperModelo():
         # Obtener una estimacion utilizando todos los espectros normalizados
         self.estimaciones = pd.DataFrame(columns=["est_C/G", "est_G/N", "est_P/G"], data=self.predict(t_espe_norm))
         self.estimaciones.insert(loc=0, column="WL", value=datos["WL"])
-        self.estimaciones.to_csv(f'output/{self.nombre}/estimaciones.csv', index=False)
+        
         #############################################
         ### REEMPLAZAR VALORES EN LA MATRIZ ORIGINAL
         #############################################
@@ -84,6 +84,9 @@ class WrapperModelo():
         self.combinado.loc[self.combinado["P/G"].isna(), 'P/G'] = self.estimaciones.values[:, 3][self.indices_vacios]
         self.combinado = self.combinado[["WL", "STATE", "C/G", "G/N", "P/G"]]
         print(self.combinado)
+
+    def guardar(self):
+        self.estimaciones.to_csv(f'output/{self.nombre}/estimaciones.csv', index=False)
         self.combinado.to_csv(f'output/{self.nombre}/combinado.csv', index=False)
 
     def graficar(self):
@@ -107,44 +110,84 @@ class WrapperModelo():
 
 modelos = {
     "linear": LinearRegression(),
-    "lasso": Lasso(alpha=0.1),
+    # "lasso": Lasso(alpha=0.1),
 }
+
+
+
+# Todos los espectros normalizados
+Xc = t_espe_norm.values
+
+n_clusters=6
+colors = ['blue', 'red', 'green', 'yellow', 'pink', 'orange', 'purple', 'brown', 'black']
+#KMeans
+km = KMeans(n_clusters=n_clusters, random_state=0)
+km.fit(Xc)
+kmResult = km.predict(Xc)
+labels = km.labels_
+
+esp_clasificados = t_espe_norm.copy()
+esp_clasificados = esp_clasificados.assign(TYPE=labels)
+
+def graficar_modelo_clasificado(modelo):
+    plt.suptitle("Estimación de las composiciones clasificadas")
+    for color, type in zip(colors, range(n_clusters)):
+        found = modelo.combinado[modelo.combinado["TYPE"] == type]
+        plt.scatter(
+            found['G/N'],
+            found["P/G"],
+            # c=color,
+            label=f"Cluster {type}"
+        )
+    plt.legend()
+    plt.xlabel('G/N')
+    plt.ylabel('P/G')
+    plt.show()
+
 
 for m in modelos:
     modelo = WrapperModelo(m, modelos[m])
     # Entrenar unicamente utilizando los espectros normalizados (x) y composiciones normalizadas (y) completos
     modelo.fit(X, y)
     modelo.ejecutar()
-    # modelo.graficar()  
+    modelo.estimaciones.insert(loc=1, column="TYPE", value=kmResult)
+    modelo.combinado.insert(loc=1, column="TYPE", value=kmResult)
+    # modelo.estimaciones.assign(TYPE=kmResult)
+    modelo.guardar()
+    # modelo.graficar()
+    graficar_modelo_clasificado(modelo)
 
-# Todos los espectros normalizados
-X = t_espe_norm.values
+# esp_clasificados = esp_clasificados.assign(ACEITE=datos["WL"])
 
-n_clusters=6
-colors = ['blue', 'red', 'green', 'yellow', 'black', 'purple']
-#KMeans
-km = KMeans(n_clusters=n_clusters, random_state=0)
-km.fit(X)
-kmResult = km.predict(X)
-labels = km.labels_
 
-esp_clasificados = t_espe_norm.copy()
-esp_clasificados = esp_clasificados.assign(TYPE=labels)
+
+
 
 cols = [float(x) for x in t_espe_norm.columns]
 
-fig, axs = plt.subplots(2, 3)
+fig, axs = plt.subplots(3, 2)
+
+esp_clasificados.to_csv("clasificados.csv")
 
 for color, type in zip(colors, range(n_clusters)):
     rows = esp_clasificados[esp_clasificados["TYPE"] == type].loc[:, esp_clasificados.columns != 'TYPE']
-    y = type % 3
-    x = int(type / 3)
-    axs[x,y].set_title(f'Cluster: {type} ({len(rows)} aceites)')
+    y = type % 2
+    x = int(type / 2)
+    axs[x,y].set_title(f'KMeans Cluster {type} ({len(rows)} aceites)')
     axs[x,y].set(xlabel='Longitud de onda', ylabel='Valor')
     for index, row in rows.iterrows():
         axs[x, y].plot(
             cols,
             row,
-            color=color
+            label=datos['WL'][index],
+            # color=color
         )
+    # axs[x, y].legend()
 plt.show()
+
+
+# for color, type in zip(colors, range(n_clusters)):
+#     rows = esp_clasificados[esp_clasificados["TYPE"] == type].loc[:, esp_clasificados.columns != 'TYPE']
+#     for index, row in rows.iterrows():
+#         plt.plot(cols, row, color=color)
+# plt.show()
