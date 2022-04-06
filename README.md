@@ -1,6 +1,12 @@
 # Quimiotipos V2
 
-## Entorno virtual de Python
+## Crear entorno virtual de Python
+
+```sh
+python -m venv venv
+```
+
+## Usar entorno virtual de Python
 
 Para iniciar el entorno virtual de Python:
 

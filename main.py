@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import Lasso, LinearRegression
+from sklearn.cluster import KMeans
 import os
 
 from plot import plot_decision_regions
@@ -115,3 +116,35 @@ for m in modelos:
     modelo.fit(X, y)
     modelo.ejecutar()
     # modelo.graficar()  
+
+# Todos los espectros normalizados
+X = t_espe_norm.values
+
+n_clusters=6
+colors = ['blue', 'red', 'green', 'yellow', 'black', 'purple']
+#KMeans
+km = KMeans(n_clusters=n_clusters, random_state=0)
+km.fit(X)
+kmResult = km.predict(X)
+labels = km.labels_
+
+esp_clasificados = t_espe_norm.copy()
+esp_clasificados = esp_clasificados.assign(TYPE=labels)
+
+cols = [float(x) for x in t_espe_norm.columns]
+
+fig, axs = plt.subplots(2, 3)
+
+for color, type in zip(colors, range(n_clusters)):
+    rows = esp_clasificados[esp_clasificados["TYPE"] == type].loc[:, esp_clasificados.columns != 'TYPE']
+    y = type % 3
+    x = int(type / 3)
+    axs[x,y].set_title(f'Cluster: {type} ({len(rows)} aceites)')
+    axs[x,y].set(xlabel='Longitud de onda', ylabel='Valor')
+    for index, row in rows.iterrows():
+        axs[x, y].plot(
+            cols,
+            row,
+            color=color
+        )
+plt.show()
