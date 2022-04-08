@@ -123,6 +123,11 @@ modelos = {
 # Xc = t_espe_norm.values
 Xc = X_train_pca
 
+plt.xlabel("PC1")
+plt.ylabel("PC2")
+plt.scatter(Xc[:, 0], Xc[:, 1])
+plt.show()
+
 n_clusters=6
 colors = ['blue', 'red', 'green', 'yellow', 'pink', 'orange', 'purple', 'brown', 'black']
 #KMeans
@@ -176,12 +181,10 @@ for label in np.sort(np.unique(labels)):
     plt.scatter(coords[:, 0], coords[:, 1], c=colors[label], label=label)
 
 for i in range(len(km.cluster_centers_)):
-    centroid = km.cluster_centers_[i] 
-    plt.scatter(centroid[0], centroid[1], c='black', marker='x', s=50)
-    plt.quiver(*centroid, *eig_vecs[:,0], color=colors[i], scale=21, width=0.005)
-    plt.quiver(*centroid, *eig_vecs[:,1], color=colors[i], scale=21, width=0.005)
+    centroid = km.cluster_centers_[i]
 
 plt.legend(loc='upper right')
+plot_decision_regions(Xc, labels, classifier=km)
 plt.show()
 
 fig, axs = plt.subplots(3, 2)

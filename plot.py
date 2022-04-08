@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 def plot_decision_regions(X, y, classifier, resolution=0.02):
     # setup marker generator and color map
     # markers = ('s', 'x', 'o', '^', 'v')
-    colors = ('red', 'blue', 'green', 'purple', 'orange', 'yellow')
+    colors = ('blue', 'red', 'green', 'yellow', 'pink', 'orange', 'purple', 'brown', 'black')
     cmap = ListedColormap(colors[:len(np.unique(y))])
     # plot the decision surface
     x1_min, x1_max = X[:, 0].min() - 1, X[:, 0].max() + 1
