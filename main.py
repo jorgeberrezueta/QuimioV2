@@ -2,6 +2,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
 from sklearn.linear_model import Lasso, LinearRegression
 from sklearn.cluster import KMeans
 import os
@@ -50,8 +51,11 @@ X = c_espe_norm.values
 # Composiciones completas normalizadas
 y = c_comp_norm
 
-# plt.matshow(t_espe_norm)
-# plt.show()
+pca = PCA(n_components=2)
+X_train_pca = pca.fit_transform(t_espe_norm)
+
+cov_mat = np.cov(X_train_pca.T)
+eig_vals, eig_vecs = np.linalg.eig(cov_mat)
 
 class WrapperModelo():
     # Crear constructor
@@ -116,7 +120,8 @@ modelos = {
 
 
 # Todos los espectros normalizados
-Xc = t_espe_norm.values
+# Xc = t_espe_norm.values
+Xc = X_train_pca
 
 n_clusters=6
 colors = ['blue', 'red', 'green', 'yellow', 'pink', 'orange', 'purple', 'brown', 'black']
@@ -159,11 +164,25 @@ for m in modelos:
 
 # esp_clasificados = esp_clasificados.assign(ACEITE=datos["WL"])
 
-
-
-
-
 cols = [float(x) for x in t_espe_norm.columns]
+
+plt.suptitle('Clasificacion por componentes principales')
+plt.title('Método de clustering: KMeans')
+plt.xlabel('PC1')
+plt.ylabel('PC2')
+zipped = np.asarray([x for x in list(zip(kmResult, Xc))])
+for label in np.sort(np.unique(labels)):
+    coords = np.array([i[1] for i in zipped if i[0] == label])
+    plt.scatter(coords[:, 0], coords[:, 1], c=colors[label], label=label)
+
+for i in range(len(km.cluster_centers_)):
+    centroid = km.cluster_centers_[i] 
+    plt.scatter(centroid[0], centroid[1], c='black', marker='x', s=50)
+    plt.quiver(*centroid, *eig_vecs[:,0], color=colors[i], scale=21, width=0.005)
+    plt.quiver(*centroid, *eig_vecs[:,1], color=colors[i], scale=21, width=0.005)
+
+plt.legend(loc='upper right')
+plt.show()
 
 fig, axs = plt.subplots(3, 2)
 
@@ -184,7 +203,6 @@ for color, type in zip(colors, range(n_clusters)):
         )
     # axs[x, y].legend()
 plt.show()
-
 
 # for color, type in zip(colors, range(n_clusters)):
 #     rows = esp_clasificados[esp_clasificados["TYPE"] == type].loc[:, esp_clasificados.columns != 'TYPE']
