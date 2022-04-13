@@ -3,11 +3,12 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
-from sklearn.linear_model import Lasso, LinearRegression
+from sklearn.linear_model import ElasticNet, GammaRegressor, Lasso, LinearRegression, PoissonRegressor
 from sklearn.cluster import KMeans
 import os
 
-from plot import plot_decision_regions
+from plot import plot_cluster_values, plot_decision_regions
+from regression import LinearRegressionGD
 
 np.set_printoptions(precision=10, suppress=True)
 
@@ -114,6 +115,7 @@ class WrapperModelo():
 
 modelos = {
     "linear": LinearRegression(),
+    # 'ridge': (),
     # "lasso": Lasso(alpha=0.1),
 }
 
@@ -154,20 +156,32 @@ def graficar_modelo_clasificado(modelo):
     plt.ylabel('P/G')
     plt.show()
 
-
 for m in modelos:
     modelo = WrapperModelo(m, modelos[m])
     # Entrenar unicamente utilizando los espectros normalizados (x) y composiciones normalizadas (y) completos
-    modelo.fit(X, y)
+    modelo.fit(X, y.values)
     modelo.ejecutar()
     modelo.estimaciones.insert(loc=1, column="TYPE", value=kmResult)
     modelo.combinado.insert(loc=1, column="TYPE", value=kmResult)
     # modelo.estimaciones.assign(TYPE=kmResult)
     modelo.guardar()
+    error = (modelo.combinado.values[c_comp_norm.index][:, 3:6] - modelo.estimaciones.values[c_comp_norm.index][:, 2:5]).astype(float)
+    print(error)
+
+    fig, ax = plt.subplots()
+    ax.matshow(error)
+    for (i, j), z in np.ndenumerate(error):
+        ax.text(j, i, '{:0.2f}'.format(z), ha='center', va='center')
+    plt.tight_layout()
+    plt.show()
+    # plt.plot(range(1,modelo.model.n_inter+1), modelo.model.cost_)
+    # plt.show()
     # modelo.graficar()
     graficar_modelo_clasificado(modelo)
 
-# esp_clasificados = esp_clasificados.assign(ACEITE=datos["WL"])
+esp_clasificados = esp_clasificados.assign(ACEITE=datos["WL"])
+esp_clasificados.insert(0, "ACEITE", esp_clasificados.pop('ACEITE'))
+esp_clasificados.insert(1, "TYPE", esp_clasificados.pop('TYPE'))
 
 cols = [float(x) for x in t_espe_norm.columns]
 
@@ -185,30 +199,38 @@ for i in range(len(km.cluster_centers_)):
 
 plt.legend(loc='upper right')
 plot_decision_regions(Xc, labels, classifier=km)
+
 plt.show()
 
-fig, axs = plt.subplots(3, 2)
+# Xc = t_espe_norm.values
+
+fig, axs = plt.subplots(n_clusters)
 
 esp_clasificados.to_csv("clasificados.csv")
 
 for color, type in zip(colors, range(n_clusters)):
-    rows = esp_clasificados[esp_clasificados["TYPE"] == type].loc[:, esp_clasificados.columns != 'TYPE']
-    y = type % 2
-    x = int(type / 2)
-    axs[x,y].set_title(f'KMeans Cluster {type} ({len(rows)} aceites)')
-    axs[x,y].set(xlabel='Longitud de onda', ylabel='Valor')
+    # rows = esp_clasificados[esp_clasificados["TYPE"] == type].loc[:, esp_clasificados.columns != 'TYPE']
+    rows = esp_clasificados[esp_clasificados["TYPE"] == type].iloc[:, 2:]
+    axs[type].set_title(f'Cluster {type} ({len(rows)} essential oils)')
+    axs[type].set(xlabel='Wavelength', ylabel='Normalized\nAmplitude')
+    # Set y lim
+    axs[type].set_ylim(0, 1)
     for index, row in rows.iterrows():
-        axs[x, y].plot(
+        axs[type].plot(
             cols,
             row,
             label=datos['WL'][index],
             # color=color
         )
-    # axs[x, y].legend()
+        
+plt.subplots_adjust(
+    top=0.96,
+    bottom=0.06,
+    left=0.125,
+    right=0.9,
+    hspace=0.89,
+    wspace=0.2
+)
+plt.tight_layout()
+plt.savefig('prueba.png', dpi=300)
 plt.show()
-
-# for color, type in zip(colors, range(n_clusters)):
-#     rows = esp_clasificados[esp_clasificados["TYPE"] == type].loc[:, esp_clasificados.columns != 'TYPE']
-#     for index, row in rows.iterrows():
-#         plt.plot(cols, row, color=color)
-# plt.show()
