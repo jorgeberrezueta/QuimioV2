@@ -6,7 +6,7 @@ class LinearRegressionGD(object):
         self.n_iter = n_iter
 
     def fit(self, X, y):
-        print(X, y)
+        # print(X, y)
         self.w_ = np.zeros(1 + X.shape[1])
         self.cost_ = []
 

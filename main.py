@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
-from sklearn.linear_model import ElasticNet, GammaRegressor, Lasso, LinearRegression, PoissonRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.cluster import KMeans
 import os
 
