@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
+from plot import plot_decision_regions
 
 from regression import LinearRegressionGD
 
@@ -64,28 +65,46 @@ i_esp_norm = normalizar(datos[datos['C/G'].isna()].iloc[:, 5:].copy())
 pca = PCA(n_components=2)
 X_train_pca = pca.fit_transform(t_espe_norm)
 
+# print("Componentes principales: ")
+# print(X_train_pca)
+
 cov_mat = np.cov(X_train_pca.T)
+
+# print("Matriz de covarianza: ")
+# print(cov_mat)
+
 eig_vals, eig_vecs = np.linalg.eig(cov_mat)
 
+# print("Eigen valores: ")
+# print(eig_vals)
+
+# print("Eigen vectores: ")
+# print(eig_vecs)
+
 Xc = X_train_pca
+
 plt.title("Principal Component Analysis")
 plt.xlabel("PC1")
 plt.ylabel("PC2")
 plt.scatter(Xc[:, 0], Xc[:, 1])
+plt.xlim(min(Xc[:, 0]) - min(Xc[:, 0]) * 0.05, max(Xc[:, 0]) + max(Xc[:, 0]) * 0.05)
+plt.ylim(min(Xc[:, 1]) - min(Xc[:, 1]) * 0.05, max(Xc[:, 1]) + max(Xc[:, 1]) * 0.05)
 plt.show()
 
 ############################
 # CLASIFICACION CON K-MEANS
 ############################
 
+# CLASIFICACION POR COMPONENTES PRINCIPALES
 n_clusters=6
 colors = ['blue', 'red', 'green', 'yellow', 'pink', 'orange', 'purple', 'brown', 'black']
 km = KMeans(n_clusters=n_clusters, random_state=0)
-km.fit(Xc)
-kmResult = km.predict(Xc)
+km.fit(X_train_pca)
+kmResult = km.predict(X_train_pca)
 labels = km.labels_
 
 print(kmResult)
+
 for label, color in zip(np.unique(labels), colors):
     plt.scatter(
         Xc[kmResult == label, 0],
@@ -93,10 +112,14 @@ for label, color in zip(np.unique(labels), colors):
         color=color,
         label=label
     )
+    
 plt.title("Principal Component Analysis")
 plt.xlabel("PC1")
 plt.ylabel("PC2")
 plt.legend()
+plot_decision_regions(Xc, labels, classifier=km)
+plt.xlim(min(Xc[:, 0]) - min(Xc[:, 0]) * 0.05, max(Xc[:, 0]) + max(Xc[:, 0]) * 0.05)
+plt.ylim(min(Xc[:, 1]) - min(Xc[:, 1]) * 0.05, max(Xc[:, 1]) + max(Xc[:, 1]) * 0.05)
 plt.show()
 
 ##############
@@ -105,7 +128,7 @@ plt.show()
 
 # Por cada columna, entrenar un modelo de regresion
 for r in ratios:
-    model = LinearRegressionGD()
+    model = LinearRegressionGD(n_iter=20)
     model.fit(
         c_espe_norm,
         c_comp_norm[r], 
@@ -122,13 +145,14 @@ for r, wmodel in zip(ratios, models):
     )
 plt.ylabel('SSE')
 plt.xlabel('Epoch')
-plt.xticks(range(1, model.n_iter + 1), range(1, model.n_iter + 1))
-plt.legend()
+if (model.n_iter < 20):
+    plt.xticks(range(1, model.n_iter + 1), range(1, model.n_iter + 1))
+# plt.legend()
 plt.show()
 
-#####################
-### GENERAR REPORTES
-#####################
+###################
+### GENERAR TABLAS
+###################
 
 if os.path.exists(f'output/linear') is False:
     os.makedirs(f'output/linear')
@@ -157,37 +181,36 @@ estimaciones.to_csv(f'output/linear/estimaciones.csv', index=False)
 combinado.to_csv(f'output/linear/combinado.csv', index=False)
 
 
-##########################
-### GRAFICAR LOS CLUSTERS
-##########################
+##########################################
+### GRAFICAR LOS CLUSTERS INDIVIDUALMENTE
+##########################################
 
 cols = [float(x) for x in t_espe_norm.columns]
 
 fig, axs = plt.subplots(n_clusters)
 
-# for color, type in zip(colors, range(n_clusters)):
-#     # rows = esp_clasificados[esp_clasificados["TYPE"] == type].loc[:, esp_clasificados.columns != 'TYPE']
-#     rows = esp_clasificados[esp_clasificados["TYPE"] == type].iloc[:, 2:]
-#     axs[type].set_title(f'Cluster {type} ({len(rows)} essential oils)')
-#     axs[type].set(xlabel='Wavelength', ylabel='Normalized\nAmplitude')
-#     # Set y lim
-#     axs[type].set_ylim(0, 1)
-#     for index, row in rows.iterrows():
-#         axs[type].plot(
-#             cols,
-#             row,
-#             label=datos['WL'][index],
-#             # color=color
-#         )
+for color, type in zip(colors, range(n_clusters)):
+    # Clasificacion por componentes principales
+    rows = t_espe_norm[kmResult == type]
+    axs[type].set_title(f'Cluster {type} ({len(rows)} essential oils)')
+    axs[type].set(xlabel='Wavelength', ylabel='Normalized\nAmplitude')
+    # Set y lim
+    axs[type].set_ylim(0, 1)
+    for index, row in rows.iterrows():
+        axs[type].plot(
+            cols,
+            row,
+            label=datos['WL'][index]
+        )
         
-# plt.subplots_adjust(
-#     top=0.96,
-#     bottom=0.06,
-#     left=0.125,
-#     right=0.9,
-#     hspace=0.89,
-#     wspace=0.2
-# )
+plt.subplots_adjust(
+    top=0.96,
+    bottom=0.06,
+    left=0.125,
+    right=0.9,
+    hspace=0.89,
+    wspace=0.2
+)
 # plt.tight_layout()
-# plt.savefig('prueba.png', dpi=300)
-# plt.show()
+plt.savefig('prueba.png', dpi=300)
+plt.show()

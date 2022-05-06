@@ -51,6 +51,6 @@ def plot_cluster_values(df, n_clusters, columns, labels, colors=colors):
         hspace=0.89,
         wspace=0.2
     )
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.savefig('prueba.png', dpi=300)
     plt.show()
